@@ -61,6 +61,9 @@
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
+I2C_HandleTypeDef hi2c1;
+
+I2S_HandleTypeDef hi2s2;
 I2S_HandleTypeDef hi2s3;
 
 TIM_HandleTypeDef htim4;
@@ -71,9 +74,11 @@ DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-float32_t input[SAMPLES];
-float32_t output[FFT_SIZE];
+float32_t input1[SAMPLES];
+float32_t output1[FFT_SIZE];
 
+float32_t input2[SAMPLES];
+float32_t output2[FFT_SIZE];
 		PUTCHAR_PROTOTYPE
 {
 	HAL_UART_Transmit(&huart2,(uint8_t *)&ch, 1,0xFFFF);
@@ -90,6 +95,8 @@ static void MX_I2S3_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_I2S2_Init(void);
+static void MX_I2C1_Init(void);
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
                                 
@@ -108,9 +115,13 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 	arm_cfft_radix4_instance_f32 S;
-	float32_t maxValue;
-	uint32_t maxIndex;
+	float32_t maxValue1;
+	uint32_t maxIndex1;
+	float32_t maxValue2;
+	uint32_t maxIndex2;
 	uint16_t i;
+	uint16_t buffer[4096];
+	
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -136,6 +147,8 @@ int main(void)
   MX_TIM4_Init();
   MX_ADC1_Init();
   MX_USART2_UART_Init();
+  MX_I2S2_Init();
+  MX_I2C1_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -148,31 +161,36 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-		for(i=0;i<SAMPLES; i+=2){
-			HAL_Delay(1);
-			
-			input[(uint16_t)i]=(float32_t)((float32_t)HAL_ADC_GetValue(&hadc1)-(float32_t)2048.0)/(float32_t)2048.0;
-			input[(uint16_t)i+1]=0;
-			
-		}
-		
+//		for(i=0;i<SAMPLES; i+=2){
+//			HAL_Delay(1);
+//			HAL_I2S_Transmit(&hi2s3,(uint16_t *)buffer,1024,100);
+//			input[(uint16_t)i]=(float32_t)((float32_t)HAL_ADC_GetValue(&hadc1)-(float32_t)2048.0)/(float32_t)2048.0;
+//			input[(uint16_t)i+1]=0;
+//			
+//		}
+		HAL_I2S_Receive(&hi2s2,(uint16_t *)input1,SAMPLES,100);
 		arm_cfft_radix4_init_f32(&S, FFT_SIZE,0,1);
+		arm_cfft_radix4_f32(&S,input1);
+		arm_cmplx_mag_f32(input1,output1,FFT_SIZE);
+		arm_max_f32(output1,FFT_SIZE,&maxValue1, &maxIndex1);
+
+		HAL_I2S_Receive(&hi2s3,(uint16_t *)input2,SAMPLES,100);
+		arm_cfft_radix4_init_f32(&S,FFT_SIZE,0,1);
+		arm_cfft_radix4_f32(&S,input2);
+		arm_cmplx_mag_f32(input2,output2,FFT_SIZE);
+		arm_max_f32(output2,FFT_SIZE,&maxValue2,&maxIndex2);
 		
-		arm_cfft_radix4_f32(&S,input);
 		
-		arm_cmplx_mag_f32(input,output,FFT_SIZE);
 		
-		arm_max_f32(output,FFT_SIZE,&maxValue, &maxIndex);
-		
-		for(i=0;i<FFT_SIZE/2;i++){
-		
-			
-			
+		for(i=0;i<FFT_SIZE/2;i++){			
 //			HAL_UART_Transmit_DMA(&huart2,(uint8_t)maxValue,10);
 //			HAL_UART_Transmit_DMA(&huart2, (uint8_t) output[(uint16_t)i],10);
+			printf("FFT_maxvalue:%.2f FFT_Output:%.2f \n\r",maxValue1,output1[(uint16_t)i]);
+		}
 		
-			printf("FFT_maxvalue:%.2f FFT_Output:%.2f \n\r",maxValue,output[(uint16_t)i]);
-		
+		for(i=0;i<FFT_SIZE/2;i++){
+			
+			printf("FFT_maxvalue:%.2f FFT_Output:%.2f \n\r",maxValue2,output2[(uint16_t)i]);
 		}
   }
   /* USER CODE END 3 */
@@ -275,6 +293,46 @@ static void MX_ADC1_Init(void)
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* I2C1 init function */
+static void MX_I2C1_Init(void)
+{
+
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* I2S2 init function */
+static void MX_I2S2_Init(void)
+{
+
+  hi2s2.Instance = SPI2;
+  hi2s2.Init.Mode = I2S_MODE_MASTER_TX;
+  hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
+  hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
+  hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
+  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_8K;
+  hi2s2.Init.CPOL = I2S_CPOL_LOW;
+  hi2s2.Init.ClockSource = I2S_CLOCK_PLL;
+  hi2s2.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_ENABLE;
+  if (HAL_I2S_Init(&hi2s2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -385,17 +443,13 @@ static void MX_DMA_Init(void)
         * Output
         * EVENT_OUT
         * EXTI
-     PC3   ------> I2S2_SD
      PA5   ------> SPI1_SCK
      PA6   ------> SPI1_MISO
      PA7   ------> SPI1_MOSI
-     PB10   ------> I2S2_CK
      PA9   ------> USB_OTG_FS_VBUS
      PA10   ------> USB_OTG_FS_ID
      PA11   ------> USB_OTG_FS_DM
      PA12   ------> USB_OTG_FS_DP
-     PB6   ------> I2C1_SCL
-     PB9   ------> I2C1_SDA
 */
 static void MX_GPIO_Init(void)
 {
@@ -434,14 +488,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(OTG_FS_PowerSwitchOn_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PDM_OUT_Pin */
-  GPIO_InitStruct.Pin = PDM_OUT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
-  HAL_GPIO_Init(PDM_OUT_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
@@ -461,14 +507,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(BOOT1_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : CLK_IN_Pin */
-  GPIO_InitStruct.Pin = CLK_IN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
-  HAL_GPIO_Init(CLK_IN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LD4_Pin LD3_Pin LD5_Pin LD6_Pin 
                            Audio_RST_Pin */
@@ -498,14 +536,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(OTG_FS_OverCurrent_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : Audio_SCL_Pin Audio_SDA_Pin */
-  GPIO_InitStruct.Pin = Audio_SCL_Pin|Audio_SDA_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : MEMS_INT2_Pin */
   GPIO_InitStruct.Pin = MEMS_INT2_Pin;
