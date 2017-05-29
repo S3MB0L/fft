@@ -76,7 +76,15 @@ DMA_HandleTypeDef hdma_usart2_tx;
 /* Private variables ---------------------------------------------------------*/
 float32_t input1[SAMPLES];
 float32_t output1[FFT_SIZE];
-
+float32_t max_data[4];
+	arm_cfft_radix4_instance_f32 S;
+	float32_t maxValue1;
+	uint32_t maxIndex1;
+	float32_t maxValue2;
+	uint32_t maxIndex2;
+	uint16_t i;
+	uint16_t buffer[4096];
+	uint16_t flag=0;
 float32_t input2[SAMPLES];
 float32_t output2[FFT_SIZE];
 		PUTCHAR_PROTOTYPE
@@ -114,13 +122,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	arm_cfft_radix4_instance_f32 S;
-	float32_t maxValue1;
-	uint32_t maxIndex1;
-	float32_t maxValue2;
-	uint32_t maxIndex2;
-	uint16_t i;
-	uint16_t buffer[4096];
+
 	
   /* USER CODE END 1 */
 
@@ -159,7 +161,7 @@ int main(void)
   while (1)
   {
   /* USER CODE END WHILE */
-
+	
   /* USER CODE BEGIN 3 */
 //		for(i=0;i<SAMPLES; i+=2){
 //			HAL_Delay(1);
@@ -168,6 +170,7 @@ int main(void)
 //			input[(uint16_t)i+1]=0;
 //			
 //		}
+		
 		HAL_I2S_Receive(&hi2s2,(uint16_t *)input1,SAMPLES,100);
 		arm_cfft_radix4_init_f32(&S, FFT_SIZE,0,1);
 		arm_cfft_radix4_f32(&S,input1);
@@ -181,17 +184,27 @@ int main(void)
 		arm_max_f32(output2,FFT_SIZE,&maxValue2,&maxIndex2);
 		
 		
+		max_data[0]=maxIndex1;
+		max_data[1]=maxValue1;
+		max_data[2]=maxIndex2;
+		max_data[3]=maxValue2;
 		
-		for(i=0;i<FFT_SIZE/2;i++){			
-//			HAL_UART_Transmit_DMA(&huart2,(uint8_t)maxValue,10);
-//			HAL_UART_Transmit_DMA(&huart2, (uint8_t) output[(uint16_t)i],10);
-			printf("FFT_maxvalue:%.2f FFT_Output:%.2f \n\r",maxValue1,output1[(uint16_t)i]);
-		}
+		HAL_Delay(200);
+		if(flag==0)
+			flag=1;
+		else
+			flag=0;
 		
-		for(i=0;i<FFT_SIZE/2;i++){
-			
-			printf("FFT_maxvalue:%.2f FFT_Output:%.2f \n\r",maxValue2,output2[(uint16_t)i]);
-		}
+//		for(i=0;i<FFT_SIZE/2;i++){			
+////			HAL_UART_Transmit_DMA(&huart2,(uint8_t)maxValue,10);
+////			HAL_UART_Transmit_DMA(&huart2, (uint8_t) output[(uint16_t)i],10);
+//			printf("FFT_maxvalue:%.2f FFT_Output:%.2f \n\r",maxValue1,output1[(uint16_t)i]);
+//		}
+//		
+//		for(i=0;i<FFT_SIZE/2;i++){
+//			
+//			printf("FFT_maxvalue:%.2f FFT_Output:%.2f \n\r",maxValue2,output2[(uint16_t)i]);
+//		}
   }
   /* USER CODE END 3 */
 

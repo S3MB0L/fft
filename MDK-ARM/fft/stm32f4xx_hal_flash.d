@@ -27,6 +27,8 @@ fft\stm32f4xx_hal_flash.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_adc
 fft\stm32f4xx_hal_flash.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h
 fft\stm32f4xx_hal_flash.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h
 fft\stm32f4xx_hal_flash.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ramfunc.h
+fft\stm32f4xx_hal_flash.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c.h
+fft\stm32f4xx_hal_flash.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c_ex.h
 fft\stm32f4xx_hal_flash.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2s.h
 fft\stm32f4xx_hal_flash.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2s_ex.h
 fft\stm32f4xx_hal_flash.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h

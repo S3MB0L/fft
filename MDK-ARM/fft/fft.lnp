@@ -23,6 +23,8 @@
 "fft\stm32f4xx_hal_adc.o"
 "fft\stm32f4xx_hal_adc_ex.o"
 "fft\stm32f4xx_hal_uart.o"
+"fft\stm32f4xx_hal_i2c.o"
+"fft\stm32f4xx_hal_i2c_ex.o"
 "C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.1\CMSIS\Lib\ARM\arm_cortexM4lf_math.lib"
 --library_type=microlib --strict --scatter "fft\fft.sct"
 --diag_suppress=L6329 --summary_stderr --info summarysizes --map --xref --callgraph --symbols
